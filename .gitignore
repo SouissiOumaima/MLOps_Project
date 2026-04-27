@@ -1,0 +1,39 @@
+# Environnement virtuel
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Données sensibles
+.env
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Modèle (optionnel — lourd)
+models/*.pkl
+
+# Logs
+logs/
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Node / React
+frontend/node_modules/
+frontend/build/
+
+# Docker
+*.tar
+
+# IDE
+.vscode/
+.idea/

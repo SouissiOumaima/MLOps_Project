@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.env
+mlruns/
+mlflow.db
+logs/
+htmlcov/
+.pytest_cache
+.coverage
+*.md
+tests/
