@@ -16,18 +16,16 @@ from datetime import datetime
 import psutil
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-
-import os
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
 # Lire les variables
-ES_HOST       = os.getenv("ES_HOST",          "http://localhost:9200")
-ES_INDEX_ML   = os.getenv("ES_INDEX_METRICS", "mlflow-metrics")
-ES_INDEX_SYS  = os.getenv("ES_INDEX_SYSTEM",  "system-metrics")
-MODEL_PATH    = os.getenv("MODEL_PATH",        "models/titanic_model.pkl")
+ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
+ES_INDEX_ML = os.getenv("ES_INDEX_METRICS", "mlflow-metrics")
+ES_INDEX_SYS = os.getenv("ES_INDEX_SYSTEM", "system-metrics")
+MODEL_PATH = os.getenv("MODEL_PATH", "models/titanic_model.pkl")
 
 # ── Configuration du logger ───────────────────────────────────────────────────
 os.makedirs("logs", exist_ok=True)
@@ -53,12 +51,12 @@ def get_es_client():
 
 def log_to_elasticsearch(run_id: str, params: dict, metrics: dict) -> None:
     try:
-        es  = get_es_client()
+        es = get_es_client()
         doc = {
             "timestamp": datetime.utcnow().isoformat(),
-            "run_id":    run_id,
-            "params":    params,
-            "metrics":   metrics
+            "run_id": run_id,
+            "params": params,
+            "metrics": metrics,
         }
         es.index(index=ES_INDEX_ML, document=doc)
         logger.info("Logs MLflow envoyés vers Elasticsearch.")
@@ -68,14 +66,14 @@ def log_to_elasticsearch(run_id: str, params: dict, metrics: dict) -> None:
 
 def log_system_metrics() -> None:
     try:
-        es  = get_es_client()
+        es = get_es_client()
         doc = {
-            "timestamp":    datetime.utcnow().isoformat(),
-            "type":         "system_metrics",
-            "cpu_percent":  psutil.cpu_percent(interval=1),
-            "ram_percent":  psutil.virtual_memory().percent,
-            "ram_used_gb":  round(psutil.virtual_memory().used / 1e9, 2),
-            "disk_percent": psutil.disk_usage('/').percent
+            "timestamp": datetime.utcnow().isoformat(),
+            "type": "system_metrics",
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "ram_percent": psutil.virtual_memory().percent,
+            "ram_used_gb": round(psutil.virtual_memory().used / 1e9, 2),
+            "disk_percent": psutil.disk_usage("/").percent,
         }
         es.index(index=ES_INDEX_SYS, document=doc)
         logger.info("Métriques système envoyées vers Elasticsearch.")
@@ -235,27 +233,30 @@ def load_model(filepath: str = "models/titanic_model.pkl"):
     return joblib.load(filepath)
 
 
-def train_random_forest(X_train, y_train, X_test=None, y_test=None,
-                        n_estimators: int = 100,
-                        max_depth: int = None):
+def train_random_forest(
+    X_train,
+    y_train,
+    X_test=None,
+    y_test=None,
+    n_estimators: int = 100,
+    max_depth: int = None,
+):
     """Entraîne un RandomForest avec suivi MLflow."""
     logger.info("Entraînement RandomForest — n_estimators=%d", n_estimators)
     mlflow.set_experiment("Titanic_Survival")
 
     with mlflow.start_run(run_name="RandomForest") as run:
         params = {
-            "model_type":    "RandomForestClassifier",
-            "n_estimators":  n_estimators,
-            "max_depth":     str(max_depth),
-            "random_state":  42
+            "model_type": "RandomForestClassifier",
+            "n_estimators": n_estimators,
+            "max_depth": str(max_depth),
+            "random_state": 42,
         }
         for k, v in params.items():
             mlflow.log_param(k, v)
 
         model = RandomForestClassifier(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            random_state=42
+            n_estimators=n_estimators, max_depth=max_depth, random_state=42
         )
         model.fit(X_train, y_train)
 
@@ -273,19 +274,15 @@ def train_random_forest(X_train, y_train, X_test=None, y_test=None,
         return model
 
 
-def train_svm(X_train, y_train, X_test=None, y_test=None,
-              C: float = 1.0,
-              kernel: str = "rbf"):
+def train_svm(
+    X_train, y_train, X_test=None, y_test=None, C: float = 1.0, kernel: str = "rbf"
+):
     """Entraîne un SVM avec suivi MLflow."""
     logger.info("Entraînement SVM — C=%.2f, kernel=%s", C, kernel)
     mlflow.set_experiment("Titanic_Survival")
 
     with mlflow.start_run(run_name=f"SVM_kernel={kernel}") as run:
-        params = {
-            "model_type": "SVC",
-            "C":          C,
-            "kernel":     kernel
-        }
+        params = {"model_type": "SVC", "C": C, "kernel": kernel}
         for k, v in params.items():
             mlflow.log_param(k, v)
 
@@ -318,24 +315,24 @@ def compare_models(X_train, y_train, X_test, y_test) -> dict:
     # LogisticRegression
     model_lr = train_model(X_train, y_train, X_test, y_test)
     results["LogisticRegression"] = {
-        "model":    model_lr,
-        "accuracy": round(accuracy_score(y_test, model_lr.predict(X_test)), 4)
+        "model": model_lr,
+        "accuracy": round(accuracy_score(y_test, model_lr.predict(X_test)), 4),
     }
 
     # RandomForest
-    model_rf = train_random_forest(X_train, y_train, X_test, y_test,
-                                   n_estimators=100, max_depth=5)
+    model_rf = train_random_forest(
+        X_train, y_train, X_test, y_test, n_estimators=100, max_depth=5
+    )
     results["RandomForest"] = {
-        "model":    model_rf,
-        "accuracy": round(accuracy_score(y_test, model_rf.predict(X_test)), 4)
+        "model": model_rf,
+        "accuracy": round(accuracy_score(y_test, model_rf.predict(X_test)), 4),
     }
 
     # SVM
-    model_svm = train_svm(X_train, y_train, X_test, y_test,
-                          C=1.0, kernel="rbf")
+    model_svm = train_svm(X_train, y_train, X_test, y_test, C=1.0, kernel="rbf")
     results["SVM"] = {
-        "model":    model_svm,
-        "accuracy": round(accuracy_score(y_test, model_svm.predict(X_test)), 4)
+        "model": model_svm,
+        "accuracy": round(accuracy_score(y_test, model_svm.predict(X_test)), 4),
     }
 
     # Trier par accuracy décroissante
@@ -349,9 +346,11 @@ def compare_models(X_train, y_train, X_test, y_test) -> dict:
         logger.info("%d. %s — Accuracy : %.4f", rank, name, info["accuracy"])
 
     # Identifier le meilleur modèle
-    best_name  = list(results_sorted.keys())[0]
+    best_name = list(results_sorted.keys())[0]
     best_model = results_sorted[best_name]["model"]
-    logger.info("Meilleur modèle : %s (%.4f)", best_name, results_sorted[best_name]["accuracy"])
+    logger.info(
+        "Meilleur modèle : %s (%.4f)", best_name, results_sorted[best_name]["accuracy"]
+    )
 
     # Sauvegarder le meilleur modèle
     save_model(best_model)
